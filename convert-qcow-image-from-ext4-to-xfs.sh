@@ -229,6 +229,19 @@ fi
 log "Uninstall cloud-initramfs-growroot that triggers kernel panic when disk is extended"
 LANG=C chroot "$xfs_mount" apt purge --yes cloud-initramfs-growroot --auto-remove
 
+log "Create commented cloud-init config to integrate with vCenter/Foreman"
+host_domain=`hostname -d`
+cat << EOF > "${xfs_mount}/etc/cloud/cloud.cfg.d/01_network.cfg"
+# network:
+#   config: disabled
+EOF
+cat << EOF > "${xfs_mount}/etc/cloud/cloud.cfg.d/10_datasource.cfg"
+# datasource_list: [NoCloud]
+# datasource:
+#   NoCloud:
+#     seedfrom: http://foreman.${host_domain}/userdata/
+EOF
+
 log "Call fstrim to reclaim unused disk space"
 fstrim -v "$xfs_mount"
 
