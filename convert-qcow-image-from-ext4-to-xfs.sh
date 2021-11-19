@@ -177,10 +177,15 @@ cp -v /etc/resolv.conf "$xfs_mount/etc/resolv.conf"
 log "Upgrade system and install xfs utilities, grub efi, puppet, vmware tools..."
 http_proxy=${PROXY} https_proxy=${PROXY} LANG=C chroot "$xfs_mount" apt update
 http_proxy=${PROXY} https_proxy=${PROXY} LANG=C chroot "$xfs_mount" apt full-upgrade --yes
-http_proxy=${PROXY} https_proxy=${PROXY} LANG=C chroot "$xfs_mount" apt install --no-install-recommends --yes debconf-utils xfsprogs grub-efi-amd64-signed grub-efi-amd64-bin dirmngr lsb-release puppet open-vm-tools qemu-guest-agent
+# perl-modules is needed by VMWare vSphere customization system to inject network parameters
+# console-data allows loadkeys usage
+http_proxy=${PROXY} https_proxy=${PROXY} LANG=C chroot "$xfs_mount" apt install --no-install-recommends --yes debconf-utils xfsprogs grub-efi-amd64-signed grub-efi-amd64-bin dirmngr lsb-release puppet open-vm-tools qemu-guest-agent perl-modules console-data
+log "Remove useless utilities and resolvconf..."
+# resolvconf is MANDATORY for proxmox as cloud-init relies on it for DNS settings but it brokes VMWare that does not use it
+# so i'll keep it in the image but if using vCenter customization you'll have to remove it and create empty /etc/resolv.conf file
 http_proxy=${PROXY} https_proxy=${PROXY} LANG=C chroot "$xfs_mount" apt purge --yes grub-cloud-amd64 unattended-upgrades --auto-remove
-# Install fr-CH keymap
 
+# Install fr-CH keymap
 log "Set machine keymap to fr_CH"
 # Inspired from https://serverfault.com/a/1050653
 DEBIAN_FRONTEND=noninteractive http_proxy=${PROXY} https_proxy=${PROXY} LANG=C chroot "$xfs_mount" apt install --yes keyboard-configuration console-setup
