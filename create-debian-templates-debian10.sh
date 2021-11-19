@@ -5,7 +5,7 @@ set -e
 # Inspired by https://pve.proxmox.com/wiki/Cloud-Init_Support
 
 PROXY=""
-QCOW_URL="https://cloud.debian.org/images/cloud/buster/20210329-591/debian-10-genericcloud-amd64-20210329-591.qcow2"
+QCOW_URL="https://cloud.debian.org/images/cloud/buster/latest/debian-10-generic-amd64.qcow2"
 DEST_QCOW_ORIG="debian-10.qcow2"
 DEST_QCOW="debian-10-xfs.qcow2"
 #PROXMOX_STORAGE="proxmox-nfs-syno"
