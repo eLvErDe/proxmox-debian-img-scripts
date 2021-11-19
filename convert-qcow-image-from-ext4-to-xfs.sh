@@ -250,6 +250,6 @@ detach_both
 
 log "Converting again to shrink zero blocks"
 qemu-img convert -O qcow2 -c "$wip_xfs_image" "$xfs_image"
-qemu-img convert -O vmdk "$wip_xfs_image" "$xfs_image_vmdk"
+qemu-img convert -O vmdk -o compat6 -o subformat=monolithicFlat "$wip_xfs_image" "$xfs_image_vmdk"
 
 log "Finished !"
