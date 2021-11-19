@@ -203,6 +203,15 @@ BACKSPACE="guess"
 EOF
 DEBIAN_FRONTEND=noninteractive LANG=C chroot "$xfs_mount" dpkg-reconfigure keyboard-configuration
 
+# Patch incorrect cloud-init configuration using bad template for APT security mirror
+# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=969934
+if `grep -q bullseye "${xfs_mount}/etc/os-release"`; then
+  if `grep -q '{{codename}}/updates' "${xfs_mount}/etc/cloud/templates/sources.list.debian.tmpl"`; then
+    log "Applying fix for incorrect cloud-init APT security template (#969934)"
+    sed -i 's!{{codename}}/updates!{{codename}}-security!g' "${xfs_mount}/etc/cloud/templates/sources.list.debian.tmpl"
+  fi
+fi
+
 mv -v "$xfs_mount/etc/resolv.conf.orig" "$xfs_mount/etc/resolv.conf"
 LANG=C chroot "$xfs_mount" apt clean
 LANG=C chroot "$xfs_mount" /bin/sh -c 'echo "debconf	debconf/priority	select	medium" | debconf-set-selections'
