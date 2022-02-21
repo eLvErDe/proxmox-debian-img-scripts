@@ -40,8 +40,8 @@ qm set ${VM_ID} --boot c --bootdisk scsi0
 # Enable SPICE display
 qm set ${VM_ID} --vga qxl
 
-# Disable memory balooning and set CPU to host
-qm set ${VM_ID} --balloon 0 --cpu host
+# Disable memory balooning and set CPU to host and enable numa
+qm set ${VM_ID} --balloon 0 --cpu host --numa 1
 
 # Enable guest agent and start on boot
 qm set ${VM_ID} --agent 1 --onboot 1
