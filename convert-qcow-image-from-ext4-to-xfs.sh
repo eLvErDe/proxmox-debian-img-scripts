@@ -144,14 +144,6 @@ sed -i 's!,x-systemd.growfs!!' "$xfs_mount/etc/fstab"
 #sed -i 's!,discard!!' "$xfs_mount/etc/fstab"
 cat "$xfs_mount/etc/fstab"
 
-log "Patching grub.cfg to remove serial stuff that makes grub prompt hidden on real display"
-sed -i '/^GRUB_TERMINAL=/d' "$xfs_mount/etc/default/grub"
-sed -i '/^GRUB_SERIAL_COMMAND=/d' "$xfs_mount/etc/default/grub"
-sed -i '/^GRUB_CMDLINE_LINUX=/d' "$xfs_mount/etc/default/grub"
-echo 'GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"' >> "$xfs_mount/etc/default/grub"
-echo "# Also check /etc/default/grub.d/ if behavior looks odd to you" >> "$xfs_mount/etc/default/grub"
-cat "$xfs_mount/etc/default/grub"
-
 # Enable root account and SSH
 log "Enable root account with root password and allow SSH"
 chroot "$xfs_mount" /bin/sh -c 'echo "root:root" | chpasswd'
@@ -168,22 +160,32 @@ rm -f "$xfs_mount/etc/default/grub.d/15_timeout.cfg"
 chroot "$xfs_mount" update-grub
 # For some reason it won't use UUID on Debian 10
 sed -i "s/root=\/dev\/[a-z0-9]\+/root=UUID=${xfs_uuid}/g" "$xfs_mount/boot/grub/grub.cfg"
-cat "$xfs_mount/boot/grub/grub.cfg"
 
 log "Enable Internet access inside chroot by mimicing host config"
 mv "$xfs_mount/etc/resolv.conf" "$xfs_mount/etc/resolv.conf.orig"
 cp -v /etc/resolv.conf "$xfs_mount/etc/resolv.conf"
 
-log "Upgrade system and install xfs utilities, grub efi, puppet, vmware tools..."
+log "Upgrade system and install xfs utilities, puppet, vmware tools..."
 http_proxy=${PROXY} https_proxy=${PROXY} LANG=C chroot "$xfs_mount" apt update
 http_proxy=${PROXY} https_proxy=${PROXY} LANG=C chroot "$xfs_mount" apt full-upgrade --yes
 # perl-modules is needed by VMWare vSphere customization system to inject network parameters
 # console-data allows loadkeys usage
-http_proxy=${PROXY} https_proxy=${PROXY} LANG=C chroot "$xfs_mount" apt install --no-install-recommends --yes debconf-utils xfsprogs grub-efi-amd64-signed grub-efi-amd64-bin dirmngr lsb-release puppet open-vm-tools qemu-guest-agent perl-modules console-data
+DEBIAN_FRONTEND=noninteractive http_proxy=${PROXY} https_proxy=${PROXY} LANG=C chroot "$xfs_mount" apt install --no-install-recommends --yes debconf-utils xfsprogs dirmngr lsb-release puppet open-vm-tools qemu-guest-agent perl-modules console-data
 log "Remove useless utilities and resolvconf..."
 # resolvconf is MANDATORY for proxmox as cloud-init relies on it for DNS settings but it brokes VMWare that does not use it
 # so i'll keep it in the image but if using vCenter customization you'll have to remove it and create empty /etc/resolv.conf file
-http_proxy=${PROXY} https_proxy=${PROXY} LANG=C chroot "$xfs_mount" apt purge --yes grub-cloud-amd64 unattended-upgrades --auto-remove
+http_proxy=${PROXY} https_proxy=${PROXY} LANG=C chroot "$xfs_mount" apt purge --yes unattended-upgrades --auto-remove
+
+log "Patching grub.cfg to remove serial stuff that makes grub prompt hidden on real display"
+# grub-efi-amd64 is really important here because it creates /etc/default/grub
+http_proxy=${PROXY} https_proxy=${PROXY} LANG=C chroot "$xfs_mount" apt purge --yes grub-cloud-amd64
+http_proxy=${PROXY} https_proxy=${PROXY} LANG=C chroot "$xfs_mount" apt install --no-install-recommends --yes grub-efi-amd64-signed grub-efi-amd64-bin grub-efi-amd64
+sed -i 's/^#*\s*GRUB_CMDLINE_LINUX=.*/GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"/' "$xfs_mount/etc/default/grub"
+sed -i 's/^#*\s*GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT=""/' "$xfs_mount/etc/default/grub"
+echo "# Also check /etc/default/grub.d/ if behavior looks odd to you" >> "$xfs_mount/etc/default/grub"
+chroot "$xfs_mount" update-grub
+cat "$xfs_mount/etc/default/grub"
+cat "$xfs_mount/boot/grub/grub.cfg"
 
 # Install fr-CH keymap
 log "Set machine keymap to fr_CH"
