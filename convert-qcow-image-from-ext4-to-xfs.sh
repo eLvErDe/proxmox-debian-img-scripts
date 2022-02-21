@@ -231,6 +231,11 @@ fi
 log "Uninstall cloud-initramfs-growroot that triggers kernel panic when disk is extended"
 LANG=C chroot "$xfs_mount" apt purge --yes cloud-initramfs-growroot --auto-remove
 
+log "Remove default debian user if exists"
+if `grep -q '^debian:' "${xfs_mount}/etc/passwd"`; then
+  LANG=C chroot "$xfs_mount" deluser --remove-home debian
+fi
+
 log "Create commented cloud-init config to integrate with vCenter/Foreman"
 host_domain=`hostname -d`
 cat << EOF > "${xfs_mount}/etc/cloud/cloud.cfg.d/01_network.cfg"
