@@ -14,6 +14,7 @@ VM_ID=9000
 VM_NAME="debian-10-template"
 VM_BRIDGE=vmbr2922
 
+rm -fv "${DEST_QCOW_ORIG}"
 http_proxy=${PROXY} \
 https_proxy=${PROXY} \
 wget -c "${QCOW_URL}" -O "${DEST_QCOW_ORIG}"
